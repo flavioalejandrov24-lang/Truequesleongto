@@ -93,7 +93,7 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
 
     // Inicializar autenticación
     async function initAuth() {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await supabaseClient.auth.getSession();
       if (session?.user) {
         state.user = session.user;
         await loadUserProfile(session.user.id);
@@ -102,7 +102,7 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
         render();
       }
 
-      supabase.auth.onAuthStateChange(async (event, session) => {
+     supabaseClient.auth.onAuthStateChange(async (event, session) => {
         if (session?.user) {
           state.user = session.user;
           await loadUserProfile(session.user.id);
@@ -117,7 +117,7 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
 
     // Cargar perfil de usuario
     async function loadUserProfile(userId) {
-      const { data, error } = await supabase
+      const { data, error } = await supabaseClient
         .from('profiles')
         .select('*')
         .eq('id', userId)
@@ -135,7 +135,7 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
 
     // Cargar productos
     async function loadProducts() {
-      const { data, error } = await supabase
+      const { data, error } = await supabaseClient
         .from('productos')
         .select('*')
         .order('created_at', { ascending: false });
@@ -146,7 +146,7 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
       }
 
       // Suscripción en tiempo real
-      supabase
+      supabaseClient
         .channel('productos_changes')
         .on('postgres_changes', 
           { event: '*', schema: 'public', table: 'productos' },
@@ -163,7 +163,7 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
       state.loading = true;
       render();
 
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabaseClient.auth.signInWithPassword({
         email: state.email,
         password: state.password
       });
@@ -182,7 +182,7 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
       state.loading = true;
       render();
 
-      const { data, error } = await supabase.auth.signUp({
+      const { data, error } = await supabaseClient.auth.signUp({
         email: state.email,
         password: state.password
       });
@@ -207,7 +207,7 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
       state.loading = true;
       render();
 
-      const { data, error } = await supabase
+      const { data, error } = await supabaseClient
         .from('profiles')
         .upsert({
           id: state.user.id,
@@ -234,7 +234,7 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
       state.loading = true;
       render();
 
-      const { data, error } = await supabase
+      const { data, error } = await supabaseClient
         .from('productos')
         .insert({
           user_id: state.user.id,
@@ -266,7 +266,7 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
 
     // Cambiar disponibilidad
     async function toggleAvailability(productId, currentStatus) {
-      const { error } = await supabase
+      const { error } = await supabaseClient
         .from('productos')
         .update({ disponible: !currentStatus })
         .eq('id', productId);
@@ -280,7 +280,7 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
 
     // Calificar usuario
     async function rateUser(targetUserId, stars) {
-      const { data: profile, error: fetchError } = await supabase
+      const { data: profile, error: fetchError } = await supabaseClient
         .from('profiles')
         .select('calificaciones')
         .eq('id', targetUserId)
@@ -293,7 +293,7 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
 
       const newRatings = [...(profile.calificaciones || []), stars];
 
-      const { error } = await supabase
+      const { error } = await supabaseClient
         .from('profiles')
         .update({ calificaciones: newRatings })
         .eq('id', targetUserId);
@@ -303,7 +303,7 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
       } else {
         notify('Calificación enviada', 'success');
         // Recargar perfil
-        const { data } = await supabase
+        const { data } = await supabaseClient
           .from('profiles')
           .select('*')
           .eq('id', targetUserId)
@@ -315,7 +315,7 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
 
     // Cerrar sesión
     async function handleLogout() {
-      await supabase.auth.signOut();
+      await supabaseClient.auth.signOut();
     }
 
     // ==========================================
@@ -353,7 +353,7 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
     }
 
     async function loadTargetProfile(userId) {
-      const { data } = await supabase
+      const { data } = await supabaseClient
         .from('profiles')
         .select('*')
         .eq('id', userId)
@@ -665,14 +665,14 @@ async function handleProductImages(event) {
   for (const file of files) {
     const fileName = `${Date.now()}-${file.name}`;
     
-    const { data, error } = await supabase.storage
+    const { data, error } = await supabaseClient.storage
       .from('productos')
       .upload(fileName, file);
 
     if (error) {
       notify('Error al subir imagen', 'error');
     } else {
-      const { data: urlData } = supabase.storage
+      const { data: urlData } = supabaseClient.storage
         .from('productos')
         .getPublicUrl(fileName);
         
