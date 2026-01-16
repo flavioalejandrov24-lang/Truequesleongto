@@ -96,6 +96,12 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
       const { data: { session } } = await supabaseClient.auth.getSession();
       if (session?.user) {
         state.user = session.user;
+
+        // Limpia la URL de tokens de Supabase para que se vea profesional
+if (window.location.hash) {
+    window.history.replaceState(null, null, window.location.pathname);
+}
+        
         await loadUserProfile(session.user.id);
       } else {
         state.view = 'auth';
