@@ -1,0 +1,733 @@
+<artifact identifier="trueques-leon-supabase" type="text/html" title="Trueques León - Supabase">
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trueques León</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @keyframes slideInRight {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    .animate-slide-in { animation: slideInRight 0.3s ease-out; }
+    .grayscale { filter: grayscale(100%); }
+    .line-clamp-1 {
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 1;
+      -webkit-box-orient: vertical;
+    }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <script>
+    // ==========================================
+    // CONFIGURACIÓN DE SUPABASE
+    // ==========================================
+    const SUPABASE_URL = 'https://fzyzzzmkgpncvrcdoiak.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6eXp6em1rZ3BuY3ZyY2RvaWFrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg1NzMyOTMsImV4cCI6MjA4NDE0OTI5M30.yhJSSzORQpnvIyIDjhEB5PG2DDiLHf6BieHOCDhnHgY';
+    
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // ==========================================
+    // ESTADO GLOBAL DE LA APLICACIÓN
+    // ==========================================
+    let state = {
+      user: null,
+      userProfile: null,
+      view: 'loading',
+      authMode: 'login',
+      products: [],
+      selectedProduct: null,
+      targetUser: null,
+      loading: false,
+      showPassword: false,
+      notifications: [],
+      email: '',
+      password: '',
+      profileData: {
+        nombre: '',
+        telefono: '',
+        foto: '',
+        calificaciones: [],
+        estrellas: 0
+      },
+      formData: {
+        descripcion: '',
+        costo: '',
+        estado: 'Seminuevo',
+        estetica: '10',
+        colonia: '',
+        calle: '',
+        numero: '',
+        images: [],
+        disponible: true
+      }
+    };
+
+    // ==========================================
+    // ICONOS SVG (Lucide Icons)
+    // ==========================================
+    const icons = {
+      camera: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path><circle cx="12" cy="13" r="3"></circle></svg>',
+      arrowLeft: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>',
+      send: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>',
+      user: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>',
+      eye: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>',
+      eyeOff: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>',
+      logOut: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>',
+      plus: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>',
+      star: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>',
+      alertCircle: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>',
+      checkCircle: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>',
+      loader: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="animate-spin"><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line></svg>'
+    };
+
+    // ==========================================
+    // FUNCIONES DE SUPABASE
+    // ==========================================
+
+    // Inicializar autenticación
+    async function initAuth() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        state.user = session.user;
+        await loadUserProfile(session.user.id);
+      } else {
+        state.view = 'auth';
+        render();
+      }
+
+      supabase.auth.onAuthStateChange(async (event, session) => {
+        if (session?.user) {
+          state.user = session.user;
+          await loadUserProfile(session.user.id);
+        } else {
+          state.user = null;
+          state.userProfile = null;
+          state.view = 'auth';
+          render();
+        }
+      });
+    }
+
+    // Cargar perfil de usuario
+    async function loadUserProfile(userId) {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (data) {
+        state.userProfile = data;
+        state.view = 'list';
+        await loadProducts();
+      } else {
+        state.view = 'profile-setup';
+      }
+      render();
+    }
+
+    // Cargar productos
+    async function loadProducts() {
+      const { data, error } = await supabase
+        .from('productos')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (data) {
+        state.products = data;
+        render();
+      }
+
+      // Suscripción en tiempo real
+      supabase
+        .channel('productos_changes')
+        .on('postgres_changes', 
+          { event: '*', schema: 'public', table: 'productos' },
+          async () => {
+            await loadProducts();
+          }
+        )
+        .subscribe();
+    }
+
+    // Login
+    async function handleLogin(e) {
+      e.preventDefault();
+      state.loading = true;
+      render();
+
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: state.email,
+        password: state.password
+      });
+
+      state.loading = false;
+
+      if (error) {
+        notify('Credenciales incorrectas', 'error');
+      }
+      render();
+    }
+
+    // Registro
+    async function handleSignup(e) {
+      e.preventDefault();
+      state.loading = true;
+      render();
+
+      const { data, error } = await supabase.auth.signUp({
+        email: state.email,
+        password: state.password
+      });
+
+      state.loading = false;
+
+      if (error) {
+        notify('Error al crear cuenta: ' + error.message, 'error');
+      } else {
+        notify('Cuenta creada. Revisa tu email para confirmar.', 'success');
+      }
+      render();
+    }
+
+    // Guardar perfil
+    async function saveProfile() {
+      if (!state.profileData.nombre || !state.profileData.telefono || !state.profileData.foto) {
+        notify('Todos los campos son obligatorios', 'error');
+        return;
+      }
+
+      state.loading = true;
+      render();
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .upsert({
+          id: state.user.id,
+          email: state.user.email,
+          nombre: state.profileData.nombre,
+          telefono: state.profileData.telefono,
+          foto: state.profileData.foto,
+          calificaciones: []
+        });
+
+      state.loading = false;
+
+      if (error) {
+        notify('Error al crear perfil', 'error');
+      } else {
+        notify('Perfil creado correctamente', 'success');
+        await loadUserProfile(state.user.id);
+      }
+      render();
+    }
+
+    // Guardar producto
+    async function saveProduct() {
+      state.loading = true;
+      render();
+
+      const { data, error } = await supabase
+        .from('productos')
+        .insert({
+          user_id: state.user.id,
+          nombre: state.userProfile.nombre,
+          telefono: state.userProfile.telefono,
+          descripcion: state.formData.descripcion,
+          costo: state.formData.costo,
+          estado: state.formData.estado,
+          colonia: state.formData.colonia,
+          images: state.formData.images,
+          disponible: true
+        });
+
+      state.loading = false;
+
+      if (error) {
+        notify('Error al publicar producto', 'error');
+      } else {
+        notify('¡Producto publicado!', 'success');
+        state.view = 'list';
+        state.formData = {
+          descripcion: '', costo: '', estado: 'Seminuevo', 
+          colonia: '', images: [], disponible: true
+        };
+        await loadProducts();
+      }
+      render();
+    }
+
+    // Cambiar disponibilidad
+    async function toggleAvailability(productId, currentStatus) {
+      const { error } = await supabase
+        .from('productos')
+        .update({ disponible: !currentStatus })
+        .eq('id', productId);
+
+      if (error) {
+        notify('Error al actualizar', 'error');
+      } else {
+        notify('Estado actualizado', 'success');
+      }
+    }
+
+    // Calificar usuario
+    async function rateUser(targetUserId, stars) {
+      const { data: profile, error: fetchError } = await supabase
+        .from('profiles')
+        .select('calificaciones')
+        .eq('id', targetUserId)
+        .single();
+
+      if (fetchError) {
+        notify('Error al calificar', 'error');
+        return;
+      }
+
+      const newRatings = [...(profile.calificaciones || []), stars];
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({ calificaciones: newRatings })
+        .eq('id', targetUserId);
+
+      if (error) {
+        notify('Error al calificar', 'error');
+      } else {
+        notify('Calificación enviada', 'success');
+        // Recargar perfil
+        const { data } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', targetUserId)
+          .single();
+        state.targetUser = data;
+        render();
+      }
+    }
+
+    // Cerrar sesión
+    async function handleLogout() {
+      await supabase.auth.signOut();
+    }
+
+    // ==========================================
+    // UTILIDADES
+    // ==========================================
+
+    function notify(msg, type = 'error') {
+      const id = Date.now();
+      state.notifications.push({ id, msg, type });
+      render();
+      setTimeout(() => {
+        state.notifications = state.notifications.filter(n => n.id !== id);
+        render();
+      }, 4000);
+    }
+
+    function getAverageStars(ratings = []) {
+      if (ratings.length === 0) return 0;
+      const sum = ratings.reduce((a, b) => a + b, 0);
+      return (sum / ratings.length).toFixed(1);
+    }
+
+    function handleImageInput(e, callback) {
+      const file = e.target.files[0];
+      if (!file) return;
+      
+      const reader = new FileReader();
+      reader.onloadend = () => callback(reader.result);
+      reader.readAsDataURL(file);
+    }
+
+    function openWhatsApp(phone, description) {
+      const message = encodeURIComponent(`Hola, me interesa tu producto: ${description}`);
+      window.open(`https://wa.me/521${phone}?text=${message}`, '_blank');
+    }
+
+    async function loadTargetProfile(userId) {
+      const { data } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      
+      state.targetUser = data;
+      state.view = 'public-profile';
+      render();
+    }
+
+    // ==========================================
+    // COMPONENTES DE UI
+    // ==========================================
+
+    function NotificationOverlay() {
+      return `
+        <div class="fixed top-4 right-4 z-[100] space-y-3 w-72 pointer-events-none">
+          ${state.notifications.map(n => `
+            <div class="pointer-events-auto flex items-center gap-3 p-4 rounded-2xl shadow-2xl border bg-white/95 animate-slide-in ${n.type === 'success' ? 'border-green-100 text-green-800' : 'border-red-100 text-red-800'}">
+              ${n.type === 'success' ? icons.checkCircle : icons.alertCircle}
+              <p class="text-xs font-bold flex-1">${n.msg}</p>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    function LoadingView() {
+      return `
+        <div class="min-h-screen flex items-center justify-center text-indigo-600">
+          ${icons.loader}
+        </div>
+      `;
+    }
+
+    function AuthView() {
+      return `
+        <div class="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6">
+          ${NotificationOverlay()}
+          <div class="w-full max-w-md bg-white rounded-[3rem] shadow-2xl p-10 relative overflow-hidden">
+            <div class="text-center mb-8">
+              <h1 class="text-3xl font-black text-slate-900">TRUEQUES<span class="text-indigo-600">LEÓN</span></h1>
+            </div>
+            <form onsubmit="return false;" class="space-y-5">
+              <div class="flex bg-slate-100 p-1 rounded-2xl">
+                <button type="button" onclick="state.authMode='login'; render();" class="flex-1 py-3 rounded-xl text-xs font-bold ${state.authMode === 'login' ? 'bg-white shadow text-indigo-600' : 'text-slate-400'}">ENTRAR</button>
+                <button type="button" onclick="state.authMode='signup'; render();" class="flex-1 py-3 rounded-xl text-xs font-bold ${state.authMode === 'signup' ? 'bg-white shadow text-indigo-600' : 'text-slate-400'}">REGISTRO</button>
+              </div>
+              <input type="email" placeholder="Correo" class="w-full p-4 bg-slate-50 rounded-2xl" value="${state.email}" oninput="state.email=this.value" />
+              <div class="relative">
+                <input type="${state.showPassword ? 'text' : 'password'}" placeholder="Contraseña" class="w-full p-4 bg-slate-50 rounded-2xl pr-12" value="${state.password}" oninput="state.password=this.value" />
+                <button type="button" onclick="state.showPassword=!state.showPassword; render();" class="absolute right-4 top-4 text-slate-300">
+                  ${state.showPassword ? icons.eyeOff : icons.eye}
+                </button>
+              </div>
+              <button type="submit" onclick="${state.authMode === 'login' ? 'handleLogin(event)' : 'handleSignup(event)'}" ${state.loading ? 'disabled' : ''} class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold flex items-center justify-center">
+                ${state.loading ? icons.loader : 'CONTINUAR'}
+              </button>
+            </form>
+          </div>
+        </div>
+      `;
+    }
+
+    function ProfileSetupView() {
+      return `
+        <div class="min-h-screen bg-slate-50 flex items-center justify-center p-6">
+          ${NotificationOverlay()}
+          <div class="w-full max-w-md bg-white rounded-[3rem] p-10 shadow-2xl border border-indigo-50">
+            <div class="text-center mb-8">
+              <h2 class="text-2xl font-black text-slate-900">Completa tu Perfil</h2>
+              <p class="text-slate-400 text-xs font-bold uppercase tracking-widest mt-2">Paso obligatorio para usar la App</p>
+            </div>
+            
+            <div class="space-y-6">
+              <div class="flex flex-col items-center">
+                <label class="w-24 h-24 rounded-full bg-slate-100 border-2 border-dashed border-indigo-200 flex items-center justify-center cursor-pointer overflow-hidden relative group">
+                  ${state.profileData.foto ? `<img src="${state.profileData.foto}" class="w-full h-full object-cover" />` : icons.camera}
+                  <input type="file" class="hidden" id="profilePhotoInput" onchange="handleImageInput(event, (img) => { state.profileData.foto = img; render(); })" />
+                </label>
+                <p class="text-[10px] font-black text-indigo-500 mt-2">FOTO DE PERFIL</p>
+              </div>
+
+              <input placeholder="Nombre completo" class="w-full p-4 bg-slate-50 rounded-2xl border-none ring-1 ring-slate-100" value="${state.profileData.nombre}" oninput="state.profileData.nombre=this.value" />
+              <input placeholder="WhatsApp (477XXXXXXX)" class="w-full p-4 bg-slate-50 rounded-2xl border-none ring-1 ring-slate-100" value="${state.profileData.telefono}" oninput="state.profileData.telefono=this.value.replace(/\\D/g,'')" />
+              
+              <button onclick="saveProfile()" ${state.loading ? 'disabled' : ''} class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold shadow-xl shadow-indigo-100 flex items-center justify-center">
+                ${state.loading ? icons.loader : 'COMENZAR'}
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function PublicProfileView() {
+      const avg = getAverageStars(state.targetUser.calificaciones);
+      const userProds = state.products.filter(p => p.user_id === state.targetUser.id);
+
+      return `
+        <div class="min-h-screen bg-slate-50">
+          ${NotificationOverlay()}
+          <div class="bg-white p-8 rounded-b-[4rem] shadow-xl relative overflow-hidden">
+            <button onclick="state.view='list'; render();" class="absolute top-6 left-6 p-3 bg-slate-100 rounded-full">
+              ${icons.arrowLeft}
+            </button>
+            
+            <div class="flex flex-col items-center text-center space-y-4">
+              <img src="${state.targetUser.foto}" class="w-24 h-24 rounded-full object-cover ring-4 ring-indigo-50" />
+              <div>
+                <h2 class="text-2xl font-black text-slate-900">${state.targetUser.nombre}</h2>
+                <p class="text-slate-400 text-xs font-bold uppercase tracking-tighter">Miembro de Trueques León</p>
+              </div>
+
+              <div class="bg-indigo-50 p-4 rounded-3xl w-full max-w-xs">
+                <p class="text-[10px] font-black text-indigo-500 uppercase mb-2">Usuario calificado con:</p>
+                <div class="flex justify-center gap-1 mb-1">
+                  ${[1,2,3,4,5].map(s => `
+                    <button onclick="rateUser('${state.targetUser.id}', ${s})">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="${s <= Math.round(avg) ? '#facc15' : 'none'}" stroke="${s <= Math.round(avg) ? '#facc15' : '#cbd5e1'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                    </button>
+                  `).join('')}
+                </div>
+                <p class="text-xs font-bold text-slate-600">(${avg} estrellas según ${state.targetUser.calificaciones?.length || 0} usuarios)</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="p-8 space-y-6">
+            <h3 class="text-sm font-black text-slate-400 uppercase tracking-widest">Historial de Trueques</h3>
+            <div class="grid gap-4">
+              ${userProds.map(p => `
+                <div class="p-4 rounded-3xl border ${!p.disponible ? 'opacity-60 bg-slate-100' : 'bg-white border-slate-100'} flex items-center gap-4">
+                  <img src="${p.images[0]}" class="w-16 h-16 rounded-2xl object-cover" />
+                  <div class="flex-1">
+                    <h4 class="font-bold text-slate-800">${p.descripcion}</h4>
+                    <span class="text-[10px] font-black uppercase ${p.disponible ? 'text-green-500' : 'text-red-500'}">
+                      ${p.disponible ? 'Disponible' : 'Cerrado/Éxito'}
+                    </span>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function ListView() {
+      return `
+        <div class="min-h-screen bg-slate-50 pb-20">
+          ${NotificationOverlay()}
+          <header class="bg-white px-8 py-6 sticky top-0 z-40 border-b flex justify-between items-center shadow-sm">
+            <div onclick="state.targetUser=state.userProfile; state.view='public-profile'; render();" class="flex items-center gap-3 cursor-pointer">
+              <img src="${state.userProfile?.foto}" class="w-10 h-10 rounded-full object-cover ring-2 ring-indigo-100" />
+              <div>
+                <h1 class="text-sm font-black text-slate-900">Hola, ${state.userProfile?.nombre.split(' ')[0]}</h1>
+                <p class="text-[9px] font-bold text-indigo-500 uppercase tracking-widest">Ver mi perfil</p>
+              </div>
+            </div>
+            <div class="flex gap-2">
+              <button onclick="state.view='form'; render();" class="bg-indigo-600 text-white p-3 rounded-2xl shadow-lg shadow-indigo-100">
+                ${icons.plus}
+              </button>
+              <button onclick="handleLogout()" class="p-3 text-slate-300 hover:text-red-500">
+                ${icons.logOut}
+              </button>
+            </div>
+          </header>
+
+          <div class="max-w-3xl mx-auto p-6 space-y-4">
+            ${state.products.map(prod => `
+              <div class="bg-white rounded-[2.5rem] border border-slate-100 overflow-hidden flex flex-col md:flex-row h-auto md:h-44 group ${!prod.disponible ? 'grayscale' : ''}">
+                <div class="md:w-48 h-48 md:h-full relative overflow-hidden">
+                  <img src="${prod.images[0]}" class="h-full w-full object-cover group-hover:scale-105 transition duration-500" />
+                  ${!prod.disponible ? `
+                    <div class="absolute inset-0 bg-slate-900/60 flex items-center justify-center">
+                      <span class="text-white font-black uppercase text-xs tracking-widest rotate-12 border-2 p-2">TRUQUEADO</span>
+                    </div>
+                  ` : ''}
+                </div>
+                <div class="flex-1 p-6 flex flex-col justify-between">
+                  <div>
+                    <div class="flex justify-between items-start">
+                      <h3 class="text-lg font-bold text-slate-800 line-clamp-1">${prod.descripcion}</h3>
+                      <span class="text-xl font-black text-green-500">$${prod.costo}</span>
+                    </div>
+                    <div class="flex items-center gap-2 mt-2">
+<button 
+                     onclick="loadTargetProfile('${prod.user_id}')"
+                     class="text-[10px] font-black text-indigo-500 uppercase flex items-center gap-1 hover:underline"
+                   >
+${icons.user} ${prod.nombre}
+</button>
+</div>
+</div>
+              <div class="flex gap-2 mt-4">
+                ${prod.user_id === state.user.id ? `
+                  <button 
+                    onclick="toggleAvailability('${prod.id}', ${prod.disponible})"
+                    class="flex-1 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition ${prod.disponible ? 'bg-red-50 text-red-500' : 'bg-green-50 text-green-500'}"
+                  >
+                    ${prod.disponible ? 'Marcar no disponible' : 'Activar de nuevo'}
+                  </button>
+                ` : `
+                  <button onclick="state.selectedProduct=${JSON.stringify(prod).replace(/"/g, '&quot;')}; state.view='detail'; render();" class="flex-[2] bg-slate-50 text-slate-600 py-3 rounded-2xl text-[10px] font-black uppercase">Detalles</button>
+                  <button onclick="openWhatsApp('${prod.telefono}', '${prod.descripcion}')" class="flex-1 bg-green-500 text-white py-3 rounded-2xl flex items-center justify-center">
+                    ${icons.send}
+                  </button>
+                `}
+              </div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function FormView() {
+  return `
+    <div class="min-h-screen bg-slate-50 p-6 flex flex-col items-center">
+      ${NotificationOverlay()}
+      <div class="w-full max-w-xl bg-white rounded-[3rem] overflow-hidden shadow-2xl">
+        <div class="bg-indigo-600 p-8 text-white flex items-center gap-4">
+          <button onclick="state.view='list'; render();">
+            ${icons.arrowLeft}
+          </button>
+          <h2 class="text-xl font-bold">Publicar Trueque</h2>
+        </div>
+        <div class="p-8 space-y-4">
+          <div class="grid grid-cols-4 gap-2 mb-4">
+            <label class="aspect-square border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center cursor-pointer">
+              ${icons.camera}
+              <input type="file" multiple class="hidden" id="productImagesInput" onchange="handleProductImages(event)" />
+            </label>
+            ${state.formData.images.map((img, i) => `
+              <img key="${i}" src="${img}" class="aspect-square object-cover rounded-2xl" />
+            `).join('')}
+          </div>
+          <input placeholder="¿Qué cambias?" class="w-full p-4 bg-slate-50 rounded-2xl border-none ring-1 ring-slate-100" value="${state.formData.descripcion}" oninput="state.formData.descripcion=this.value" />
+          <input type="number" placeholder="Valor aproximado ($)" class="w-full p-4 bg-slate-50 rounded-2xl border-none ring-1 ring-slate-100" value="${state.formData.costo}" oninput="state.formData.costo=this.value" />
+          <input placeholder="Colonia (en León)" class="w-full p-4 bg-slate-50 rounded-2xl border-none ring-1 ring-slate-100" value="${state.formData.colonia}" oninput="state.formData.colonia=this.value" />
+          <button onclick="saveProduct()" ${state.loading ? 'disabled' : ''} class="w-full bg-indigo-600 text-white py-5 rounded-[2rem] font-bold shadow-xl shadow-indigo-100">
+            ${state.loading ? 'PUBLICANDO...' : 'PUBLICAR TRUEQUE'}
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function DetailView() {
+  if (!state.selectedProduct) return '';
+  
+  return `
+    <div class="min-h-screen bg-slate-50">
+      ${NotificationOverlay()}
+      <div class="bg-white p-8 rounded-b-[4rem] shadow-xl relative overflow-hidden">
+        <button onclick="state.view='list'; render();" class="absolute top-6 left-6 p-3 bg-slate-100 rounded-full">
+          ${icons.arrowLeft}
+        </button>
+        
+        <div class="max-w-2xl mx-auto pt-16">
+          <div class="grid grid-cols-2 gap-2 mb-6">
+            ${state.selectedProduct.images.map(img => `
+              <img src="${img}" class="w-full h-48 object-cover rounded-2xl" />
+            `).join('')}
+          </div>
+          
+          <h2 class="text-2xl font-black text-slate-900 mb-2">${state.selectedProduct.descripcion}</h2>
+          <p class="text-3xl font-black text-green-500 mb-4">$${state.selectedProduct.costo}</p>
+          
+          <div class="bg-slate-50 rounded-3xl p-6 space-y-3 mb-6">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-black text-slate-400 uppercase">Estado:</span>
+              <span class="text-sm font-bold text-slate-700">${state.selectedProduct.estado}</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-black text-slate-400 uppercase">Colonia:</span>
+              <span class="text-sm font-bold text-slate-700">${state.selectedProduct.colonia}</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-black text-slate-400 uppercase">Vendedor:</span>
+              <button onclick="loadTargetProfile('${state.selectedProduct.user_id}')" class="text-sm font-bold text-indigo-600 hover:underline">
+                ${state.selectedProduct.nombre}
+              </button>
+            </div>
+          </div>
+
+          <button onclick="openWhatsApp('${state.selectedProduct.telefono}', '${state.selectedProduct.descripcion}')" class="w-full bg-green-500 text-white py-5 rounded-[2rem] font-bold shadow-xl flex items-center justify-center gap-2">
+            ${icons.send}
+            <span>CONTACTAR POR WHATSAPP</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ==========================================
+// HANDLER ESPECIAL PARA MÚLTIPLES IMÁGENES
+// ==========================================
+async function handleProductImages(event) {
+  const files = Array.from(event.target.files);
+  state.loading = true;
+  render();
+
+  for (const file of files) {
+    const fileName = `${Date.now()}-${file.name}`;
+    
+    const { data, error } = await supabase.storage
+      .from('productos')
+      .upload(fileName, file);
+
+    if (error) {
+      notify('Error al subir imagen', 'error');
+    } else {
+      const { data: urlData } = supabase.storage
+        .from('productos')
+        .getPublicUrl(fileName);
+        
+      state.formData.images.push(urlData.publicUrl);
+    }
+  }
+  
+  state.loading = false;
+  render();
+}
+
+// ==========================================
+// FUNCIÓN PRINCIPAL DE RENDERIZADO
+// ==========================================
+function render() {
+  const app = document.getElementById('app');
+  
+  let content = '';
+  
+  switch(state.view) {
+    case 'loading':
+      content = LoadingView();
+      break;
+    case 'auth':
+      content = AuthView();
+      break;
+    case 'profile-setup':
+      content = ProfileSetupView();
+      break;
+    case 'list':
+      content = ListView();
+      break;
+    case 'form':
+      content = FormView();
+      break;
+    case 'detail':
+      content = DetailView();
+      break;
+    case 'public-profile':
+      content = PublicProfileView();
+      break;
+    default:
+      content = LoadingView();
+  }
+  
+  app.innerHTML = content;
+}
+
+// ==========================================
+// INICIALIZACIÓN
+// ==========================================
+document.addEventListener('DOMContentLoaded', () => {
+  initAuth();
+});
+  </script>
+</body>
+</html>
+</artifact>
