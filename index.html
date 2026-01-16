@@ -1,4 +1,4 @@
-<artifact identifier="trueques-leon-supabase" type="text/html" title="Trueques León - Supabase">
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -31,7 +31,7 @@
     const SUPABASE_URL = 'https://fzyzzzmkgpncvrcdoiak.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6eXp6em1rZ3BuY3ZyY2RvaWFrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg1NzMyOTMsImV4cCI6MjA4NDE0OTI5M30.yhJSSzORQpnvIyIDjhEB5PG2DDiLHf6BieHOCDhnHgY';
     
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     // ==========================================
     // ESTADO GLOBAL DE LA APLICACIÓN
@@ -730,4 +730,4 @@ document.addEventListener('DOMContentLoaded', () => {
   </script>
 </body>
 </html>
-</artifact>
+
