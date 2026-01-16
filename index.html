@@ -178,25 +178,53 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
 
     // Registro
     async function handleSignup(e) {
-      e.preventDefault();
-      state.loading = true;
-      render();
+  e.preventDefault();
+  state.loading = true;
+  render();
 
-      const { data, error } = await supabaseClient.auth.signUp({
-        email: state.email,
-        password: state.password
-      });
-
-      state.loading = false;
-
-      if (error) {
-        notify('Error al crear cuenta: ' + error.message, 'error');
-      } else {
-        notify('Cuenta creada. Revisa tu email para confirmar.', 'success');
-      }
-      render();
+  const { data, error } = await supabaseClient.auth.signUp({
+    email: state.email,
+    password: state.password,
+    options: {
+      // Esto asegura que el correo regrese a tu página de GitHub
+      emailRedirectTo: 'https://flavioalejandrov24-lang.github.io/Truequesleongto/'
     }
+  });
 
+  state.loading = false;
+
+  if (error) {
+    notify('Error al crear cuenta: ' + error.message, 'error');
+  } else {
+    notify('Cuenta creada. Revisa tu email para confirmar.', 'success');
+  }
+  render();
+}
+
+// Recuperar contraseña
+async function handleForgotPassword() {
+  if (!state.email) {
+    notify('Ingresa tu correo en el campo de arriba', 'error');
+    return;
+  }
+  
+  state.loading = true;
+  render();
+
+  const { error } = await supabaseClient.auth.resetPasswordForEmail(state.email, {
+    redirectTo: 'https://flavioalejandrov24-lang.github.io/Truequesleongto/',
+  });
+
+  state.loading = false;
+  
+  if (error) {
+    notify('Error: ' + error.message, 'error');
+  } else {
+    notify('Correo de recuperación enviado', 'success');
+  }
+  render();
+}
+    
     // Guardar perfil
     async function saveProfile() {
       if (!state.profileData.nombre || !state.profileData.telefono || !state.profileData.foto) {
@@ -412,6 +440,9 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
               <button type="submit" onclick="${state.authMode === 'login' ? 'handleLogin(event)' : 'handleSignup(event)'}" ${state.loading ? 'disabled' : ''} class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold flex items-center justify-center">
                 ${state.loading ? icons.loader : 'CONTINUAR'}
               </button>
+              <button type="button" onclick="handleForgotPassword()" class="text-[10px] font-bold text-indigo-500 hover:underline block mb-2">
+  ¿OLVIDASTE TU CONTRASEÑA?
+</button>
             </form>
           </div>
         </div>
