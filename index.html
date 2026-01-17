@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -31,10 +30,10 @@
     const SUPABASE_URL = 'https://fzyzzzmkgpncvrcdoiak.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6eXp6em1rZ3BuY3ZyY2RvaWFrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg1NzMyOTMsImV4cCI6MjA4NDE0OTI5M30.yhJSSzORQpnvIyIDjhEB5PG2DDiLHf6BieHOCDhnHgY';
     
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     // ==========================================
-    // ESTADO GLOBAL DE LA APLICACIÓN
+    // ESTADO GLOBAL
     // ==========================================
     let state = {
       user: null,
@@ -46,9 +45,12 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
       targetUser: null,
       loading: false,
       showPassword: false,
+      showConfirmPassword: false,
+      rememberMe: false,
       notifications: [],
       email: '',
       password: '',
+      confirmPassword: '',
       profileData: {
         nombre: '',
         telefono: '',
@@ -58,57 +60,53 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
       },
       formData: {
         descripcion: '',
+        descripcion_breve: '',
         costo: '',
         estado: 'Seminuevo',
-        estetica: '10',
         colonia: '',
-        calle: '',
-        numero: '',
         images: [],
         disponible: true
       }
     };
 
     // ==========================================
-    // ICONOS SVG (Lucide Icons)
+    // ICONOS SVG
     // ==========================================
     const icons = {
       camera: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path><circle cx="12" cy="13" r="3"></circle></svg>',
       arrowLeft: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>',
       send: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>',
-      user: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>',
-      eye: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>',
-      eyeOff: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>',
-      logOut: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>',
-      plus: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>',
+      user: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>',
+      eye: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>',
+      eyeOff: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>',
+      logOut: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>',
+      plus: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>',
+      home: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>',
       star: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>',
       alertCircle: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>',
       checkCircle: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>',
-      loader: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="animate-spin"><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line></svg>'
+      loader: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="animate-spin"><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line></svg>',
+      x: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>'
     };
 
     // ==========================================
     // FUNCIONES DE SUPABASE
     // ==========================================
 
-    // Inicializar autenticación
     async function initAuth() {
       const { data: { session } } = await supabaseClient.auth.getSession();
       if (session?.user) {
         state.user = session.user;
-
-        // Limpia la URL de tokens de Supabase para que se vea profesional
-if (window.location.hash) {
-    window.history.replaceState(null, null, window.location.pathname);
-}
-        
+        if (window.location.hash) {
+          window.history.replaceState(null, null, window.location.pathname);
+        }
         await loadUserProfile(session.user.id);
       } else {
         state.view = 'auth';
         render();
       }
 
-     supabaseClient.auth.onAuthStateChange(async (event, session) => {
+      supabaseClient.auth.onAuthStateChange(async (event, session) => {
         if (session?.user) {
           state.user = session.user;
           await loadUserProfile(session.user.id);
@@ -121,7 +119,6 @@ if (window.location.hash) {
       });
     }
 
-    // Cargar perfil de usuario
     async function loadUserProfile(userId) {
       const { data, error } = await supabaseClient
         .from('profiles')
@@ -131,7 +128,7 @@ if (window.location.hash) {
 
       if (data) {
         state.userProfile = data;
-        state.view = 'list';
+        state.view = 'home';
         await loadProducts();
       } else {
         state.view = 'profile-setup';
@@ -139,7 +136,6 @@ if (window.location.hash) {
       render();
     }
 
-    // Cargar productos
     async function loadProducts() {
       const { data, error } = await supabaseClient
         .from('productos')
@@ -151,7 +147,6 @@ if (window.location.hash) {
         render();
       }
 
-      // Suscripción en tiempo real
       supabaseClient
         .channel('productos_changes')
         .on('postgres_changes', 
@@ -163,7 +158,6 @@ if (window.location.hash) {
         .subscribe();
     }
 
-    // Login
     async function handleLogin(e) {
       e.preventDefault();
       state.loading = true;
@@ -182,56 +176,63 @@ if (window.location.hash) {
       render();
     }
 
-    // Registro
     async function handleSignup(e) {
-  e.preventDefault();
-  state.loading = true;
-  render();
+      e.preventDefault();
+      
+      if (state.password !== state.confirmPassword) {
+        notify('Las contraseñas no coinciden', 'error');
+        return;
+      }
+      
+      if (state.password.length < 6) {
+        notify('La contraseña debe tener al menos 6 caracteres', 'error');
+        return;
+      }
+      
+      state.loading = true;
+      render();
 
-  const { data, error } = await supabaseClient.auth.signUp({
-    email: state.email,
-    password: state.password,
-    options: {
-      // Esto asegura que el correo regrese a tu página de GitHub
-      emailRedirectTo: 'https://flavioalejandrov24-lang.github.io/Truequesleongto/'
+      const { data, error } = await supabaseClient.auth.signUp({
+        email: state.email,
+        password: state.password,
+        options: {
+          emailRedirectTo: 'https://flavioalejandrov24-lang.github.io/Truequesleongto/'
+        }
+      });
+
+      state.loading = false;
+
+      if (error) {
+        notify('Error al crear cuenta: ' + error.message, 'error');
+      } else {
+        notify('Cuenta creada. Revisa tu email para confirmar.', 'success');
+      }
+      render();
     }
-  });
 
-  state.loading = false;
+    async function handleForgotPassword() {
+      if (!state.email) {
+        notify('Ingresa tu correo en el campo de arriba', 'error');
+        return;
+      }
+      
+      state.loading = true;
+      render();
 
-  if (error) {
-    notify('Error al crear cuenta: ' + error.message, 'error');
-  } else {
-    notify('Cuenta creada. Revisa tu email para confirmar.', 'success');
-  }
-  render();
-}
+      const { error } = await supabaseClient.auth.resetPasswordForEmail(state.email, {
+        redirectTo: 'https://flavioalejandrov24-lang.github.io/Truequesleongto/',
+      });
 
-// Recuperar contraseña
-async function handleForgotPassword() {
-  if (!state.email) {
-    notify('Ingresa tu correo en el campo de arriba', 'error');
-    return;
-  }
-  
-  state.loading = true;
-  render();
-
-  const { error } = await supabaseClient.auth.resetPasswordForEmail(state.email, {
-    redirectTo: 'https://flavioalejandrov24-lang.github.io/Truequesleongto/',
-  });
-
-  state.loading = false;
-  
-  if (error) {
-    notify('Error: ' + error.message, 'error');
-  } else {
-    notify('Correo de recuperación enviado', 'success');
-  }
-  render();
-}
+      state.loading = false;
+      
+      if (error) {
+        notify('Error: ' + error.message, 'error');
+      } else {
+        notify('Correo de recuperación enviado', 'success');
+      }
+      render();
+    }
     
-    // Guardar perfil
     async function saveProfile() {
       if (!state.profileData.nombre || !state.profileData.telefono || !state.profileData.foto) {
         notify('Todos los campos son obligatorios', 'error');
@@ -263,8 +264,14 @@ async function handleForgotPassword() {
       render();
     }
 
-    // Guardar producto
     async function saveProduct() {
+      if (!state.formData.descripcion || !state.formData.descripcion_breve || 
+          !state.formData.costo || !state.formData.colonia || 
+          state.formData.images.length === 0) {
+        notify('Todos los campos son obligatorios', 'error');
+        return;
+      }
+
       state.loading = true;
       render();
 
@@ -275,6 +282,7 @@ async function handleForgotPassword() {
           nombre: state.userProfile.nombre,
           telefono: state.userProfile.telefono,
           descripcion: state.formData.descripcion,
+          descripcion_breve: state.formData.descripcion_breve,
           costo: state.formData.costo,
           estado: state.formData.estado,
           colonia: state.formData.colonia,
@@ -288,17 +296,21 @@ async function handleForgotPassword() {
         notify('Error al publicar producto', 'error');
       } else {
         notify('¡Producto publicado!', 'success');
-        state.view = 'list';
+        state.view = 'home';
         state.formData = {
-          descripcion: '', costo: '', estado: 'Seminuevo', 
-          colonia: '', images: [], disponible: true
+          descripcion: '',
+          descripcion_breve: '',
+          costo: '',
+          estado: 'Seminuevo',
+          colonia: '',
+          images: [],
+          disponible: true
         };
         await loadProducts();
       }
       render();
     }
 
-    // Cambiar disponibilidad
     async function toggleAvailability(productId, currentStatus) {
       const { error } = await supabaseClient
         .from('productos')
@@ -309,10 +321,10 @@ async function handleForgotPassword() {
         notify('Error al actualizar', 'error');
       } else {
         notify('Estado actualizado', 'success');
+        await loadProducts();
       }
     }
 
-    // Calificar usuario
     async function rateUser(targetUserId, stars) {
       const { data: profile, error: fetchError } = await supabaseClient
         .from('profiles')
@@ -336,7 +348,6 @@ async function handleForgotPassword() {
         notify('Error al calificar', 'error');
       } else {
         notify('Calificación enviada', 'success');
-        // Recargar perfil
         const { data } = await supabaseClient
           .from('profiles')
           .select('*')
@@ -347,7 +358,6 @@ async function handleForgotPassword() {
       }
     }
 
-    // Cerrar sesión
     async function handleLogout() {
       await supabaseClient.auth.signOut();
     }
@@ -398,6 +408,38 @@ async function handleForgotPassword() {
       render();
     }
 
+    async function handleProductImages(event) {
+      const files = Array.from(event.target.files);
+      state.loading = true;
+      render();
+
+      for (const file of files) {
+        const fileName = `${Date.now()}-${file.name}`;
+        
+        const { data, error } = await supabaseClient.storage
+          .from('productos')
+          .upload(fileName, file);
+
+        if (error) {
+          notify('Error al subir imagen', 'error');
+        } else {
+          const { data: urlData } = supabaseClient.storage
+            .from('productos')
+            .getPublicUrl(fileName);
+            
+          state.formData.images.push(urlData.publicUrl);
+        }
+      }
+      
+      state.loading = false;
+      render();
+    }
+
+    function removeImage(index) {
+      state.formData.images.splice(index, 1);
+      render();
+    }
+
     // ==========================================
     // COMPONENTES DE UI
     // ==========================================
@@ -424,31 +466,86 @@ async function handleForgotPassword() {
     }
 
     function AuthView() {
+      const isLogin = state.authMode === 'login';
+      
       return `
-        <div class="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6">
+        <div class="min-h-screen ${isLogin ? 'bg-slate-50' : 'bg-gradient-to-br from-purple-600 via-purple-700 to-indigo-800'} flex flex-col items-center justify-center p-6">
           ${NotificationOverlay()}
-          <div class="w-full max-w-md bg-white rounded-[3rem] shadow-2xl p-10 relative overflow-hidden">
-            <div class="text-center mb-8">
-              <h1 class="text-3xl font-black text-slate-900">TRUEQUES<span class="text-indigo-600">LEÓN</span></h1>
-            </div>
-            <form onsubmit="return false;" class="space-y-5">
-              <div class="flex bg-slate-100 p-1 rounded-2xl">
-                <button type="button" onclick="state.authMode='login'; render();" class="flex-1 py-3 rounded-xl text-xs font-bold ${state.authMode === 'login' ? 'bg-white shadow text-indigo-600' : 'text-slate-400'}">ENTRAR</button>
-                <button type="button" onclick="state.authMode='signup'; render();" class="flex-1 py-3 rounded-xl text-xs font-bold ${state.authMode === 'signup' ? 'bg-white shadow text-indigo-600' : 'text-slate-400'}">REGISTRO</button>
+          <div class="w-full max-w-md ${isLogin ? 'bg-white' : 'bg-white/10 backdrop-blur-xl border border-white/20'} rounded-[2.5rem] shadow-2xl p-8 relative overflow-hidden">
+            ${isLogin ? `
+              <div class="flex justify-center mb-4">
+                <img src="https://via.placeholder.com/120x60/6366f1/ffffff?text=LOGO" alt="Logo" class="h-16 object-contain" />
               </div>
-              <input type="email" placeholder="Correo" class="w-full p-4 bg-slate-50 rounded-2xl" value="${state.email}" oninput="state.email=this.value" />
+            ` : ''}
+            
+            <div class="text-center mb-6">
+              <h1 class="text-2xl font-black ${isLogin ? 'text-slate-900' : 'text-white'}">
+                TRUEQUES<span class="${isLogin ? 'text-indigo-600' : 'text-yellow-300'}">LEÓN</span>
+              </h1>
+            </div>
+
+            <form onsubmit="return false;" class="space-y-3">
+              <div class="flex ${isLogin ? 'bg-slate-100' : 'bg-white/10'} p-1 rounded-xl">
+                <button type="button" onclick="state.authMode='login'; state.password=''; state.confirmPassword=''; render();" class="flex-1 py-2.5 rounded-lg text-xs font-bold transition ${state.authMode === 'login' ? (isLogin ? 'bg-white shadow text-indigo-600' : 'bg-white/20 text-white') : (isLogin ? 'text-slate-400' : 'text-white/60')}">ENTRAR</button>
+                <button type="button" onclick="state.authMode='signup'; state.password=''; state.confirmPassword=''; render();" class="flex-1 py-2.5 rounded-lg text-xs font-bold transition ${state.authMode === 'signup' ? (isLogin ? 'bg-white shadow text-indigo-600' : 'bg-white/20 text-white') : (isLogin ? 'text-slate-400' : 'text-white/60')}">REGISTRO</button>
+              </div>
+
+              <input 
+                type="email" 
+                placeholder="Correo" 
+                class="w-full p-3 ${isLogin ? 'bg-slate-50 text-slate-900' : 'bg-white/10 text-white placeholder-white/60 border border-white/20'} rounded-xl text-sm" 
+                value="${state.email}" 
+                oninput="state.email=this.value" 
+              />
+
               <div class="relative">
-                <input type="${state.showPassword ? 'text' : 'password'}" placeholder="Contraseña" class="w-full p-4 bg-slate-50 rounded-2xl pr-12" value="${state.password}" oninput="state.password=this.value" />
-                <button type="button" onclick="state.showPassword=!state.showPassword; render();" class="absolute right-4 top-4 text-slate-300">
+                <input 
+                  type="${state.showPassword ? 'text' : 'password'}" 
+                  placeholder="Contraseña" 
+                  class="w-full p-3 pr-10 ${isLogin ? 'bg-slate-50 text-slate-900' : 'bg-white/10 text-white placeholder-white/60 border border-white/20'} rounded-xl text-sm" 
+                  value="${state.password}" 
+                  oninput="state.password=this.value" 
+                />
+                <button type="button" onclick="state.showPassword=!state.showPassword; render();" class="absolute right-3 top-3 ${isLogin ? 'text-slate-300' : 'text-white/60'}">
                   ${state.showPassword ? icons.eyeOff : icons.eye}
                 </button>
               </div>
-              <button type="submit" onclick="${state.authMode === 'login' ? 'handleLogin(event)' : 'handleSignup(event)'}" ${state.loading ? 'disabled' : ''} class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold flex items-center justify-center">
+
+              ${!isLogin ? `
+                <div class="relative">
+                  <input 
+                    type="${state.showConfirmPassword ? 'text' : 'password'}" 
+                    placeholder="Confirmar Contraseña" 
+                    class="w-full p-3 pr-10 bg-white/10 text-white placeholder-white/60 border border-white/20 rounded-xl text-sm" 
+                    value="${state.confirmPassword}" 
+                    oninput="state.confirmPassword=this.value" 
+                  />
+                  <button type="button" onclick="state.showConfirmPassword=!state.showConfirmPassword; render();" class="absolute right-3 top-3 text-white/60">
+                    ${state.showConfirmPassword ? icons.eyeOff : icons.eye}
+                  </button>
+                </div>
+              ` : ''}
+
+              ${isLogin ? `
+                <div class="flex items-center justify-between text-[10px] font-bold">
+                  <button type="button" onclick="handleForgotPassword()" class="${isLogin ? 'text-indigo-500' : 'text-white'} hover:underline">
+                    ¿OLVIDASTE TU CONTRASEÑA?
+                  </button>
+                  <label class="flex items-center gap-2 ${isLogin ? 'text-slate-600' : 'text-white'} cursor-pointer">
+                    <input type="checkbox" ${state.rememberMe ? 'checked' : ''} onchange="state.rememberMe=this.checked" class="rounded" />
+                    MANTENER SESIÓN
+                  </label>
+                </div>
+              ` : ''}
+
+              <button 
+                type="submit" 
+                onclick="${state.authMode === 'login' ? 'handleLogin(event)' : 'handleSignup(event)'}" 
+                ${state.loading ? 'disabled' : ''} 
+                class="w-full ${isLogin ? 'bg-indigo-600' : 'bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600'} text-white py-3 rounded-xl font-bold flex items-center justify-center shadow-lg"
+              >
                 ${state.loading ? icons.loader : 'CONTINUAR'}
               </button>
-              <button type="button" onclick="handleForgotPassword()" class="text-[10px] font-bold text-indigo-500 hover:underline block mb-2">
-  ¿OLVIDASTE TU CONTRASEÑA?
-</button>
             </form>
           </div>
         </div>
@@ -459,13 +556,13 @@ async function handleForgotPassword() {
       return `
         <div class="min-h-screen bg-slate-50 flex items-center justify-center p-6">
           ${NotificationOverlay()}
-          <div class="w-full max-w-md bg-white rounded-[3rem] p-10 shadow-2xl border border-indigo-50">
-            <div class="text-center mb-8">
-              <h2 class="text-2xl font-black text-slate-900">Completa tu Perfil</h2>
+          <div class="w-full max-w-md bg-white rounded-[2.5rem] p-8 shadow-2xl border border-indigo-50">
+            <div class="text-center mb-6">
+              <h2 class="text-xl font-black text-slate-900">Completa tu Perfil</h2>
               <p class="text-slate-400 text-xs font-bold uppercase tracking-widest mt-2">Paso obligatorio para usar la App</p>
             </div>
             
-            <div class="space-y-6">
+            <div class="space-y-4">
               <div class="flex flex-col items-center">
                 <label class="w-24 h-24 rounded-full bg-slate-100 border-2 border-dashed border-indigo-200 flex items-center justify-center cursor-pointer overflow-hidden relative group">
                   ${state.profileData.foto ? `<img src="${state.profileData.foto}" class="w-full h-full object-cover" />` : icons.camera}
@@ -474,10 +571,10 @@ async function handleForgotPassword() {
                 <p class="text-[10px] font-black text-indigo-500 mt-2">FOTO DE PERFIL</p>
               </div>
 
-              <input placeholder="Nombre completo" class="w-full p-4 bg-slate-50 rounded-2xl border-none ring-1 ring-slate-100" value="${state.profileData.nombre}" oninput="state.profileData.nombre=this.value" />
-              <input placeholder="WhatsApp (477XXXXXXX)" class="w-full p-4 bg-slate-50 rounded-2xl border-none ring-1 ring-slate-100" value="${state.profileData.telefono}" oninput="state.profileData.telefono=this.value.replace(/\\D/g,'')" />
+              <input placeholder="Nombre completo" class="w-full p-3 bg-slate-50 rounded-xl border-none ring-1 ring-slate-100 text-sm" value="${state.profileData.nombre}" oninput="state.profileData.nombre=this.value" />
+              <input placeholder="WhatsApp (477XXXXXXX)" class="w-full p-3 bg-slate-50 rounded-xl border-none ring-1 ring-slate-100 text-sm" value="${state.profileData.telefono}" oninput="state.profileData.telefono=this.value.replace(/\\D/g,'')" />
               
-              <button onclick="saveProfile()" ${state.loading ? 'disabled' : ''} class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold shadow-xl shadow-indigo-100 flex items-center justify-center">
+              <button onclick="saveProfile()" ${state.loading ? 'disabled' : ''} class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold shadow-xl shadow-indigo-100 flex items-center justify-center">
                 ${state.loading ? icons.loader : 'COMENZAR'}
               </button>
             </div>
@@ -493,24 +590,24 @@ async function handleForgotPassword() {
       return `
         <div class="min-h-screen bg-slate-50">
           ${NotificationOverlay()}
-          <div class="bg-white p-8 rounded-b-[4rem] shadow-xl relative overflow-hidden">
-            <button onclick="state.view='list'; render();" class="absolute top-6 left-6 p-3 bg-slate-100 rounded-full">
+          <div class="bg-white p-6 rounded-b-[3rem] shadow-xl relative overflow-hidden">
+            <button onclick="state.view='home'; render();" class="absolute top-4 left-4 p-2.5 bg-slate-100 rounded-full">
               ${icons.arrowLeft}
             </button>
             
-            <div class="flex flex-col items-center text-center space-y-4">
-              <img src="${state.targetUser.foto}" class="w-24 h-24 rounded-full object-cover ring-4 ring-indigo-50" />
+            <div class="flex flex-col items-center text-center space-y-3 pt-2">
+              <img src="${state.targetUser.foto}" class="w-20 h-20 rounded-full object-cover ring-4 ring-indigo-50" />
               <div>
-                <h2 class="text-2xl font-black text-slate-900">${state.targetUser.nombre}</h2>
-                <p class="text-slate-400 text-xs font-bold uppercase tracking-tighter">Miembro de Trueques León</p>
+                <h2 class="text-xl font-black text-slate-900">${state.targetUser.nombre}</h2>
+                <p class="text-slate-400 text-[10px] font-bold uppercase tracking-tighter">Miembro de Trueques León</p>
               </div>
 
-              <div class="bg-indigo-50 p-4 rounded-3xl w-full max-w-xs">
+              <div class="bg-indigo-50 p-4 rounded-2xl w-full max-w-xs">
                 <p class="text-[10px] font-black text-indigo-500 uppercase mb-2">Usuario calificado con:</p>
                 <div class="flex justify-center gap-1 mb-1">
                   ${[1,2,3,4,5].map(s => `
                     <button onclick="rateUser('${state.targetUser.id}', ${s})">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="${s <= Math.round(avg) ? '#facc15' : 'none'}" stroke="${s <= Math.round(avg) ? '#facc15' : '#cbd5e1'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="${s <= Math.round(avg) ? '#facc15' : 'none'}" stroke="${s <= Math.round(avg) ? '#facc15' : '#cbd5e1'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
                     </button>
                   `).join('')}
                 </div>
@@ -519,18 +616,28 @@ async function handleForgotPassword() {
             </div>
           </div>
 
-          <div class="p-8 space-y-6">
-            <h3 class="text-sm font-black text-slate-400 uppercase tracking-widest">Historial de Trueques</h3>
-            <div class="grid gap-4">
-              ${userProds.map(p => `
-                <div class="p-4 rounded-3xl border ${!p.disponible ? 'opacity-60 bg-slate-100' : 'bg-white border-slate-100'} flex items-center gap-4">
-                  <img src="${p.images[0]}" class="w-16 h-16 rounded-2xl object-cover" />
+          <div class="p-6 space-y-4">
+            <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest">Historial de Trueques</h3>
+            <div class="grid gap-3">
+              ${userProds.length === 0 ? `
+                <p class="text-center text-slate-400 text-sm py-8">Este usuario aún no ha publicado trueques</p>
+              ` : userProds.map(p => `
+                <div class="p-3 rounded-2xl border ${!p.disponible ? 'opacity-60 bg-slate-100' : 'bg-white border-slate-100'} flex items-center gap-3">
+                  <img src="${p.images[0]}" class="w-14 h-14 rounded-xl object-cover" />
                   <div class="flex-1">
-                    <h4 class="font-bold text-slate-800">${p.descripcion}</h4>
-                    <span class="text-[10px] font-black uppercase ${p.disponible ? 'text-green-500' : 'text-red-500'}">
-                      ${p.disponible ? 'Disponible' : 'Cerrado/Éxito'}
+                    <h4 class="font-bold text-slate-800 text-sm">${p.descripcion}</h4>
+                    <span class="text-[9px] font-black uppercase ${p.disponible ? 'text-green-500' : 'text-red-500'}">
+                      ${p.disponible ? 'Disponible' : 'No Disponible'}
                     </span>
                   </div>
+                  ${state.user.id === state.targetUser.id ? `
+                    <button 
+                      onclick="toggleAvailability('${p.id}', ${p.disponible})"
+                      class="px-3 py-1.5 rounded-lg text-[9px] font-black uppercase transition ${p.disponible ? 'bg-red-50 text-red-500' : 'bg-green-50 text-green-500'}"
+                    >
+                      ${p.disponible ? 'Desactivar' : 'Activar'}
+                    </button>
+                  ` : ''}
                 </div>
               `).join('')}
             </div>
@@ -539,232 +646,246 @@ async function handleForgotPassword() {
       `;
     }
 
-    function ListView() {
+    function HomeView() {
+      // Solo productos de OTROS usuarios
+      const otherUsersProducts = state.products.filter(p => p.user_id !== state.user.id);
+      
       return `
         <div class="min-h-screen bg-slate-50 pb-20">
           ${NotificationOverlay()}
-          <header class="bg-white px-8 py-6 sticky top-0 z-40 border-b flex justify-between items-center shadow-sm">
-            <div onclick="state.targetUser=state.userProfile; state.view='public-profile'; render();" class="flex items-center gap-3 cursor-pointer">
-              <img src="${state.userProfile?.foto}" class="w-10 h-10 rounded-full object-cover ring-2 ring-indigo-100" />
+          <header class="bg-white px-6 py-4 sticky top-0 z-40 border-b flex justify-between items-center shadow-sm">
+            <div onclick="state.targetUser=state.userProfile; state.view='public-profile'; render();" class="flex items-center gap-2.5 cursor-pointer">
+              <img src="${state.userProfile?.foto}" class="w-9 h-9 rounded-full object-cover ring-2 ring-indigo-100" />
               <div>
                 <h1 class="text-sm font-black text-slate-900">Hola, ${state.userProfile?.nombre.split(' ')[0]}</h1>
                 <p class="text-[9px] font-bold text-indigo-500 uppercase tracking-widest">Ver mi perfil</p>
               </div>
             </div>
             <div class="flex gap-2">
-              <button onclick="state.view='form'; render();" class="bg-indigo-600 text-white p-3 rounded-2xl shadow-lg shadow-indigo-100">
+              <button onclick="state.view='home'; render();" class="p-2.5 rounded-xl ${state.view === 'home' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'}">
+                ${icons.home}
+              </button>
+              <button onclick="state.view='form'; render();" class="bg-indigo-600 text-white p-2.5 rounded-xl shadow-lg shadow-indigo-100">
                 ${icons.plus}
               </button>
-              <button onclick="handleLogout()" class="p-3 text-slate-300 hover:text-red-500">
+              <button onclick="handleLogout()" class="p-2.5 text-slate-300 hover:text-red-500">
                 ${icons.logOut}
               </button>
             </div>
           </header>
 
-          <div class="max-w-3xl mx-auto p-6 space-y-4">
-            ${state.products.map(prod => `
-              <div class="bg-white rounded-[2.5rem] border border-slate-100 overflow-hidden flex flex-col md:flex-row h-auto md:h-44 group ${!prod.disponible ? 'grayscale' : ''}">
-                <div class="md:w-48 h-48 md:h-full relative overflow-hidden">
+          <div class="max-w-3xl mx-auto p-4 space-y-3">
+            ${otherUsersProducts.length === 0 ? `
+              <div class="text-center py-16">
+                <p class="text-slate-400 text-sm font-bold">No hay trueques disponibles</p>
+                <p class="text-slate-300 text-xs mt-2">Sé el primero en publicar</p>
+              </div>
+            ` : otherUsersProducts.map(prod => `
+              <div class="bg-white rounded-[2rem] border border-slate-100 overflow-hidden flex flex-col md:flex-row h-auto md:h-36 group ${!prod.disponible ? 'grayscale' : ''}">
+                <div class="md:w-36 h-36 md:h-full relative overflow-hidden">
                   <img src="${prod.images[0]}" class="h-full w-full object-cover group-hover:scale-105 transition duration-500" />
                   ${!prod.disponible ? `
-                    <div class="absolute inset-0 bg-slate-900/60 flex items-center justify-center">
-                      <span class="text-white font-black uppercase text-xs tracking-widest rotate-12 border-2 p-2">TRUQUEADO</span>
+                    <div class="absolute inset-0 bg-red-500/70 flex items-center justify-center">
+                      <span class="text-white font-black uppercase text-[10px] tracking-widest border-2 border-white px-3 py-1 rounded-lg">NO DISPONIBLE</span>
                     </div>
                   ` : ''}
                 </div>
-                <div class="flex-1 p-6 flex flex-col justify-between">
+                <div class="flex-1 p-4 flex flex-col justify-between">
                   <div>
                     <div class="flex justify-between items-start">
-                      <h3 class="text-lg font-bold text-slate-800 line-clamp-1">${prod.descripcion}</h3>
-                      <span class="text-xl font-black text-green-500">$${prod.costo}</span>
+                      <h3 class="text-base font-bold text-slate-800 line-clamp-1">${prod.descripcion}</h3>
+                      <span class="text-lg font-black text-green-500">${prod.costo}</span>
                     </div>
+                    <p class="text-[11px] text-slate-500 mt-1">${prod.descripcion_breve || 'Sin descripción'}</p>
                     <div class="flex items-center gap-2 mt-2">
-<button 
-                     onclick="loadTargetProfile('${prod.user_id}')"
-                     class="text-[10px] font-black text-indigo-500 uppercase flex items-center gap-1 hover:underline"
-                   >
-${icons.user} ${prod.nombre}
-</button>
-</div>
-</div>
-              <div class="flex gap-2 mt-4">
-                ${prod.user_id === state.user.id ? `
-                  <button 
-                    onclick="toggleAvailability('${prod.id}', ${prod.disponible})"
-                    class="flex-1 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition ${prod.disponible ? 'bg-red-50 text-red-500' : 'bg-green-50 text-green-500'}"
-                  >
-                    ${prod.disponible ? 'Marcar no disponible' : 'Activar de nuevo'}
-                  </button>
-                ` : `
-                  <button onclick="state.selectedProduct=${JSON.stringify(prod).replace(/"/g, '&quot;')}; state.view='detail'; render();" class="flex-[2] bg-slate-50 text-slate-600 py-3 rounded-2xl text-[10px] font-black uppercase">Detalles</button>
-                  <button onclick="openWhatsApp('${prod.telefono}', '${prod.descripcion}')" class="flex-1 bg-green-500 text-white py-3 rounded-2xl flex items-center justify-center">
-                    ${icons.send}
-                  </button>
-                `}
+                      <button 
+                        onclick="loadTargetProfile('${prod.user_id}')"
+                        class="text-[10px] font-black text-indigo-500 uppercase flex items-center gap-1 hover:underline"
+                      >
+                        ${icons.user} ${prod.nombre}
+                      </button>
+                    </div>
+                  </div>
+                  <div class="flex gap-2 mt-3">
+                    <button onclick="state.selectedProduct=${JSON.stringify(prod).replace(/"/g, '&quot;')}; state.view='detail'; render();" class="flex-[2] bg-slate-50 text-slate-600 py-2 rounded-xl text-[10px] font-black uppercase">Detalles</button>
+                    <button onclick="openWhatsApp('${prod.telefono}', '${prod.descripcion}')" class="flex-1 bg-green-500 text-white py-2 rounded-xl flex items-center justify-center">
+                      ${icons.send}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    function FormView() {
+      return `
+        <div class="min-h-screen bg-slate-50 p-4 flex flex-col items-center">
+          ${NotificationOverlay()}
+          <div class="w-full max-w-xl bg-white rounded-[2.5rem] overflow-hidden shadow-2xl">
+            <div class="bg-indigo-600 p-6 text-white flex items-center gap-3">
+              <button onclick="state.view='home'; render();">
+                ${icons.arrowLeft}
+              </button>
+              <h2 class="text-lg font-bold">Publicar Trueque</h2>
+            </div>
+            <div class="p-6 space-y-3">
+              <div class="flex flex-col items-center mb-4">
+                <div class="grid grid-cols-4 gap-2 w-full">
+                  <label class="aspect-square border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-indigo-300 transition">
+                    ${icons.camera}
+                    <input type="file" multiple accept="image/*" class="hidden" id="productImagesInput" onchange="handleProductImages(event)" />
+                  </label>
+                  ${state.formData.images.map((img, i) => `
+                    <div class="relative aspect-square">
+                      <img src="${img}" class="w-full h-full object-cover rounded-xl" />
+                      <button onclick="removeImage(${i})" class="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-1 shadow-lg">
+                        ${icons.x}
+                      </button>
+                    </div>
+                  `).join('')}
+                </div>
+                <p class="text-[10px] font-black text-indigo-500 mt-2">AGREGAR FOTOS</p>
+              </div>
+
+              <div>
+                <label class="block text-[10px] font-black text-slate-600 uppercase mb-1">¿Qué cambias?</label>
+                <input placeholder="Ej: iPhone 12 Pro" class="w-full p-3 bg-slate-50 rounded-xl border-none ring-1 ring-slate-100 text-sm" value="${state.formData.descripcion}" oninput="state.formData.descripcion=this.value" />
+              </div>
+
+              <div>
+                <label class="block text-[10px] font-black text-slate-600 uppercase mb-1">Descripción breve</label>
+                <textarea placeholder="Ej: 128GB, color azul, con cargador" class="w-full p-3 bg-slate-50 rounded-xl border-none ring-1 ring-slate-100 text-sm h-20 resize-none" oninput="state.formData.descripcion_breve=this.value">${state.formData.descripcion_breve}</textarea>
+              </div>
+
+              <div>
+                <label class="block text-[10px] font-black text-slate-600 uppercase mb-1">Valor aproximado ($)</label>
+                <input type="number" placeholder="5000" class="w-full p-3 bg-slate-50 rounded-xl border-none ring-1 ring-slate-100 text-sm" value="${state.formData.costo}" oninput="state.formData.costo=this.value" />
+              </div>
+
+              <div>
+                <label class="block text-[10px] font-black text-slate-600 uppercase mb-1">Estado del producto</label>
+                <select class="w-full p-3 bg-slate-50 rounded-xl border-none ring-1 ring-slate-100 text-sm" onchange="state.formData.estado=this.value">
+                  <option value="Nuevo sin uso" ${state.formData.estado === 'Nuevo sin uso' ? 'selected' : ''}>Nuevo sin uso</option>
+                  <option value="Seminuevo" ${state.formData.estado === 'Seminuevo' ? 'selected' : ''}>Seminuevo</option>
+                  <option value="Regular" ${state.formData.estado === 'Regular' ? 'selected' : ''}>Regular</option>
+                  <option value="Con desgaste" ${state.formData.estado === 'Con desgaste' ? 'selected' : ''}>Con desgaste</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-[10px] font-black text-slate-600 uppercase mb-1">¿Dónde entregas?</label>
+                <input placeholder="Ej: Centro, Jardines del Moral" class="w-full p-3 bg-slate-50 rounded-xl border-none ring-1 ring-slate-100 text-sm" value="${state.formData.colonia}" oninput="state.formData.colonia=this.value" />
+              </div>
+
+              <div class="flex gap-2 pt-2">
+                <button onclick="state.view='home'; state.formData={descripcion:'',descripcion_breve:'',costo:'',estado:'Seminuevo',colonia:'',images:[],disponible:true}; render();" class="flex-1 bg-slate-100 text-slate-600 py-3 rounded-xl font-bold text-sm">
+                  CANCELAR
+                </button>
+                <button onclick="saveProduct()" ${state.loading ? 'disabled' : ''} class="flex-1 bg-indigo-600 text-white py-3 rounded-xl font-bold shadow-xl shadow-indigo-100 text-sm">
+                  ${state.loading ? 'PUBLICANDO...' : 'PUBLICAR'}
+                </button>
               </div>
             </div>
           </div>
-        `).join('')}
-      </div>
-    </div>
-  `;
-}
-
-function FormView() {
-  return `
-    <div class="min-h-screen bg-slate-50 p-6 flex flex-col items-center">
-      ${NotificationOverlay()}
-      <div class="w-full max-w-xl bg-white rounded-[3rem] overflow-hidden shadow-2xl">
-        <div class="bg-indigo-600 p-8 text-white flex items-center gap-4">
-          <button onclick="state.view='list'; render();">
-            ${icons.arrowLeft}
-          </button>
-          <h2 class="text-xl font-bold">Publicar Trueque</h2>
         </div>
-        <div class="p-8 space-y-4">
-          <div class="grid grid-cols-4 gap-2 mb-4">
-            <label class="aspect-square border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center cursor-pointer">
-              ${icons.camera}
-              <input type="file" multiple class="hidden" id="productImagesInput" onchange="handleProductImages(event)" />
-            </label>
-            ${state.formData.images.map((img, i) => `
-              <img key="${i}" src="${img}" class="aspect-square object-cover rounded-2xl" />
-            `).join('')}
-          </div>
-          <input placeholder="¿Qué cambias?" class="w-full p-4 bg-slate-50 rounded-2xl border-none ring-1 ring-slate-100" value="${state.formData.descripcion}" oninput="state.formData.descripcion=this.value" />
-          <input type="number" placeholder="Valor aproximado ($)" class="w-full p-4 bg-slate-50 rounded-2xl border-none ring-1 ring-slate-100" value="${state.formData.costo}" oninput="state.formData.costo=this.value" />
-          <input placeholder="Colonia (en León)" class="w-full p-4 bg-slate-50 rounded-2xl border-none ring-1 ring-slate-100" value="${state.formData.colonia}" oninput="state.formData.colonia=this.value" />
-          <button onclick="saveProduct()" ${state.loading ? 'disabled' : ''} class="w-full bg-indigo-600 text-white py-5 rounded-[2rem] font-bold shadow-xl shadow-indigo-100">
-            ${state.loading ? 'PUBLICANDO...' : 'PUBLICAR TRUEQUE'}
-          </button>
-        </div>
-      </div>
-    </div>
-  `;
-}
+      `;
+    }
 
-function DetailView() {
-  if (!state.selectedProduct) return '';
-  
-  return `
-    <div class="min-h-screen bg-slate-50">
-      ${NotificationOverlay()}
-      <div class="bg-white p-8 rounded-b-[4rem] shadow-xl relative overflow-hidden">
-        <button onclick="state.view='list'; render();" class="absolute top-6 left-6 p-3 bg-slate-100 rounded-full">
-          ${icons.arrowLeft}
-        </button>
-        
-        <div class="max-w-2xl mx-auto pt-16">
-          <div class="grid grid-cols-2 gap-2 mb-6">
-            ${state.selectedProduct.images.map(img => `
-              <img src="${img}" class="w-full h-48 object-cover rounded-2xl" />
-            `).join('')}
-          </div>
-          
-          <h2 class="text-2xl font-black text-slate-900 mb-2">${state.selectedProduct.descripcion}</h2>
-          <p class="text-3xl font-black text-green-500 mb-4">$${state.selectedProduct.costo}</p>
-          
-          <div class="bg-slate-50 rounded-3xl p-6 space-y-3 mb-6">
-            <div class="flex items-center gap-2">
-              <span class="text-xs font-black text-slate-400 uppercase">Estado:</span>
-              <span class="text-sm font-bold text-slate-700">${state.selectedProduct.estado}</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <span class="text-xs font-black text-slate-400 uppercase">Colonia:</span>
-              <span class="text-sm font-bold text-slate-700">${state.selectedProduct.colonia}</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <span class="text-xs font-black text-slate-400 uppercase">Vendedor:</span>
-              <button onclick="loadTargetProfile('${state.selectedProduct.user_id}')" class="text-sm font-bold text-indigo-600 hover:underline">
-                ${state.selectedProduct.nombre}
+    function DetailView() {
+      if (!state.selectedProduct) return '';
+      
+      return `
+        <div class="min-h-screen bg-slate-50">
+          ${NotificationOverlay()}
+          <div class="bg-white p-6 rounded-b-[3rem] shadow-xl relative overflow-hidden">
+            <button onclick="state.view='home'; render();" class="absolute top-4 left-4 p-2.5 bg-slate-100 rounded-full">
+              ${icons.arrowLeft}
+            </button>
+            
+            <div class="max-w-2xl mx-auto pt-12">
+              <div class="grid grid-cols-2 gap-2 mb-4">
+                ${state.selectedProduct.images.map(img => `
+                  <img src="${img}" class="w-full h-40 object-cover rounded-xl" />
+                `).join('')}
+              </div>
+              
+              <h2 class="text-xl font-black text-slate-900 mb-1">${state.selectedProduct.descripcion}</h2>
+              <p class="text-sm text-slate-600 mb-3">${state.selectedProduct.descripcion_breve || 'Sin descripción adicional'}</p>
+              <p class="text-2xl font-black text-green-500 mb-4">${state.selectedProduct.costo}</p>
+              
+              <div class="bg-slate-50 rounded-2xl p-4 space-y-2 mb-4">
+                <div class="flex items-center gap-2">
+                  <span class="text-[10px] font-black text-slate-400 uppercase">Estado:</span>
+                  <span class="text-sm font-bold text-slate-700">${state.selectedProduct.estado}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="text-[10px] font-black text-slate-400 uppercase">Entrega en:</span>
+                  <span class="text-sm font-bold text-slate-700">${state.selectedProduct.colonia}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="text-[10px] font-black text-slate-400 uppercase">Vendedor:</span>
+                  <button onclick="loadTargetProfile('${state.selectedProduct.user_id}')" class="text-sm font-bold text-indigo-600 hover:underline">
+                    ${state.selectedProduct.nombre}
+                  </button>
+                </div>
+              </div>
+
+              <button onclick="openWhatsApp('${state.selectedProduct.telefono}', '${state.selectedProduct.descripcion}')" class="w-full bg-green-500 text-white py-4 rounded-xl font-bold shadow-xl flex items-center justify-center gap-2">
+                ${icons.send}
+                <span>CONTACTAR POR WHATSAPP</span>
               </button>
             </div>
           </div>
-
-          <button onclick="openWhatsApp('${state.selectedProduct.telefono}', '${state.selectedProduct.descripcion}')" class="w-full bg-green-500 text-white py-5 rounded-[2rem] font-bold shadow-xl flex items-center justify-center gap-2">
-            ${icons.send}
-            <span>CONTACTAR POR WHATSAPP</span>
-          </button>
         </div>
-      </div>
-    </div>
-  `;
-}
-
-// ==========================================
-// HANDLER ESPECIAL PARA MÚLTIPLES IMÁGENES
-// ==========================================
-async function handleProductImages(event) {
-  const files = Array.from(event.target.files);
-  state.loading = true;
-  render();
-
-  for (const file of files) {
-    const fileName = `${Date.now()}-${file.name}`;
-    
-    const { data, error } = await supabaseClient.storage
-      .from('productos')
-      .upload(fileName, file);
-
-    if (error) {
-      notify('Error al subir imagen', 'error');
-    } else {
-      const { data: urlData } = supabaseClient.storage
-        .from('productos')
-        .getPublicUrl(fileName);
-        
-      state.formData.images.push(urlData.publicUrl);
+      `;
     }
-  }
-  
-  state.loading = false;
-  render();
-}
 
-// ==========================================
-// FUNCIÓN PRINCIPAL DE RENDERIZADO
-// ==========================================
-function render() {
-  const app = document.getElementById('app');
-  
-  let content = '';
-  
-  switch(state.view) {
-    case 'loading':
-      content = LoadingView();
-      break;
-    case 'auth':
-      content = AuthView();
-      break;
-    case 'profile-setup':
-      content = ProfileSetupView();
-      break;
-    case 'list':
-      content = ListView();
-      break;
-    case 'form':
-      content = FormView();
-      break;
-    case 'detail':
-      content = DetailView();
-      break;
-    case 'public-profile':
-      content = PublicProfileView();
-      break;
-    default:
-      content = LoadingView();
-  }
-  
-  app.innerHTML = content;
-}
+    // ==========================================
+    // FUNCIÓN PRINCIPAL DE RENDERIZADO
+    // ==========================================
+    function render() {
+      const app = document.getElementById('app');
+      
+      let content = '';
+      
+      switch(state.view) {
+        case 'loading':
+          content = LoadingView();
+          break;
+        case 'auth':
+          content = AuthView();
+          break;
+        case 'profile-setup':
+          content = ProfileSetupView();
+          break;
+        case 'home':
+          content = HomeView();
+          break;
+        case 'form':
+          content = FormView();
+          break;
+        case 'detail':
+          content = DetailView();
+          break;
+        case 'public-profile':
+          content = PublicProfileView();
+          break;
+        default:
+          content = LoadingView();
+      }
+      
+      app.innerHTML = content;
+    }
 
-// ==========================================
-// INICIALIZACIÓN
-// ==========================================
-document.addEventListener('DOMContentLoaded', () => {
-  initAuth();
-});
+    // ==========================================
+    // INICIALIZACIÓN
+    // ==========================================
+    document.addEventListener('DOMContentLoaded', () => {
+      initAuth();
+    });
   </script>
 </body>
 </html>
-
